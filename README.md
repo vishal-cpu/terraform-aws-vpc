@@ -1,16 +1,46 @@
-## Requirements
+# Terraform AWS VPC Module
 
-No requirements.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Terraform Version](https://img.shields.io/badge/terraform-≥1.3.0-blue)](https://www.terraform.io/)
+[![AWS Provider Version](https://img.shields.io/badge/AWS-≥4.0-orange)](https://registry.terraform.io/providers/hashicorp/aws/latest)
+[![GitHub Release](https://img.shields.io/github/v/release/vishal-cpu/terraform-aws-vpc)](https://github.com/vishal-cpu/terraform-aws-vpc/releases)
+
+A Terraform module to provision a **production-ready VPC** on AWS with configurable subnets, NAT gateways, routing, and network ACLs.
+
+---
+
+## Features
+- ✅ **Multi-AZ VPC** with public/private subnets  
+- ✅ **NAT Gateways** (single or multi-AZ for HA)  
+- ✅ **Customizable routing** (Internet Gateway, Transit Gateway, etc.)  
+- ✅ **Default Network ACLs** with managed rules  
+- ✅ **Tagging support** for cost allocation and governance  
+
+---
+
+## Usage
+```hcl
+module "vpc" {
+  source = "github.com/vishal-cpu/terraform-aws-vpc"
+
+  # Required
+  cidr_block = "10.0.0.0/16"
+  tags = {
+    Name  = "prod-vpc"
+    Owner = "devops-team"
+  }
+
+  # Optional (defaults shown)
+  availability_zones         = ["us-east-1a", "us-east-1b"]
+  public_default_subnet_cidr = ["10.0.1.0/24", "10.0.2.0/24"]
+  single_nat_gateway         = true
+}
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
-
-## Modules
-
-No modules.
+| <a name="provider_aws"></a> [aws](#provider\_aws) | ≥4.0 |
 
 ## Resources
 
