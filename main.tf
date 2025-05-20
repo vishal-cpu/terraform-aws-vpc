@@ -7,8 +7,7 @@ resource "aws_vpc" "main" {
   enable_dns_support   = true
   instance_tenancy     = "default"
   tags = merge(var.tags, {
-    "user:Owner" = var.tags.Owner,
-    "Name"       = "${var.tags.Name}-vpc"
+    "Name" = "vpc"
   })
 }
 
@@ -19,8 +18,7 @@ resource "aws_internet_gateway" "igw" {
   depends_on = [aws_vpc.main]
   vpc_id     = aws_vpc.main.id
   tags = merge(var.tags, {
-    "user:Owner" = var.tags.Owner,
-    "Name"       = "${var.tags.Name}-igw"
+    "Name" = "igw"
   })
 }
 
@@ -31,8 +29,7 @@ resource "aws_eip" "nat" {
   lifecycle { create_before_destroy = true }
 
   tags = merge(var.tags, {
-    "user:Owner" = var.tags.Owner,
-    "Name"       = "${var.tags.Name}-eip-${element(var.availability_zones, var.single_nat_gateway ? 0 : count.index)}-natgw"
+    "Name" = "eip-${element(var.availability_zones, var.single_nat_gateway ? 0 : count.index)}-natgw"
   })
 }
 
@@ -48,8 +45,7 @@ resource "aws_nat_gateway" "ngw" {
   )
 
   tags = merge(var.tags, {
-    "user:Owner" = var.tags.Owner,
-    "Name"       = "${var.tags.Name}-ngw-${element(var.availability_zones, var.single_nat_gateway ? 0 : count.index)}"
+    "Name" = "ngw-${element(var.availability_zones, var.single_nat_gateway ? 0 : count.index)}"
   })
 
   depends_on = [aws_internet_gateway.igw]
@@ -67,8 +63,7 @@ resource "aws_subnet" "public_default" {
   map_public_ip_on_launch = true
 
   tags = merge(var.tags, {
-    "user:Owner" = var.tags.Owner,
-    "Name"       = "${var.tags.Name}-subnet-public-default-${element(var.availability_zones, count.index)}",
+    "Name" = "subnet-public-default-${element(var.availability_zones, count.index)}",
   })
 }
 
@@ -81,8 +76,7 @@ resource "aws_subnet" "private_app" {
   map_public_ip_on_launch = false
 
   tags = merge(var.tags, {
-    "user:Owner" = var.tags.Owner,
-    "Name"       = "${var.tags.Name}-subnet-private-app-${element(var.availability_zones, count.index)}",
+    "Name" = "subnet-private-app-${element(var.availability_zones, count.index)}",
   })
 }
 
@@ -94,8 +88,7 @@ resource "aws_subnet" "private_db" {
   map_public_ip_on_launch = false
 
   tags = merge(var.tags, {
-    "user:Owner" = var.tags.Owner,
-    "Name"       = "${var.tags.Name}-subnet-private-db-${element(var.availability_zones, count.index)}"
+    "Name" = "subnet-private-db-${element(var.availability_zones, count.index)}"
   })
 }
 
@@ -133,10 +126,18 @@ resource "aws_route_table" "public_default" {
     }
   }
 
+  dynamic "route" {
+    for_each = var.vpc_peering_routes != null && length(var.vpc_peering_routes) > 0 ? var.vpc_peering_routes : []
+    content {
+      cidr_block                = route.value.cidr_block
+      vpc_peering_connection_id = route.value.vpc_peering_connection_id
+    }
+  }
+
   depends_on = [aws_internet_gateway.igw]
+
   tags = merge(var.tags, {
-    "user:Owner" = var.tags.Owner,
-    "Name"       = "${var.tags.Name}-route-public-default-${var.single_nat_gateway ? element(var.availability_zones, 0) : element(var.availability_zones, count.index)}"
+    "Name" = "route-public-default-${var.single_nat_gateway ? element(var.availability_zones, 0) : element(var.availability_zones, count.index)}"
   })
 }
 
@@ -174,49 +175,47 @@ resource "aws_route_table" "private_app" {
   depends_on = [aws_nat_gateway.ngw]
 
   tags = merge(var.tags, {
-    "user:Owner" = var.tags.Owner,
-    "Name"       = "${var.tags.Name}-route-private-app-${var.single_nat_gateway ? element(var.availability_zones, 0) : element(var.availability_zones, count.index)}"
+    "Name" = "route-private-app-${var.single_nat_gateway ? element(var.availability_zones, 0) : element(var.availability_zones, count.index)}"
   })
 }
 
-#resource "aws_route_table" "private_db" {
-#  count            = var.single_nat_gateway && var.tgw_route ? 1 : length(var.private_db_subnet_cidr)
-#  vpc_id           = aws_vpc.main.id
-#  propagating_vgws = var.propagate_private_route_tables_vgw
-#
-#  dynamic "route" {
-#    for_each = var.existing_private_routes != null ? var.existing_private_routes : []
-#    content {
-#      cidr_block = route.value.cidr_block
-#      gateway_id = route.value.gateway_id
-#    }
-#  }
-#
-#  route {
-#    cidr_block     = "0.0.0.0/0"
-#    nat_gateway_id = element(aws_nat_gateway.ngw.*.id, count.index)
-#  }
-#
-#  route {
-#    cidr_block         = var.tgw_cidr
-#    transit_gateway_id = var.tgw_id
-#  }
-#
-#  dynamic "route" {
-#    for_each = var.create_route_private ? var.external_route_private : []
-#    content {
-#      cidr_block = lookup(route.value, "cidr_block", "null")
-#      gateway_id = lookup(route.value, "gateway_id", "null")
-#    }
-#  }
-#
-#  depends_on = [aws_nat_gateway.ngw]
-#
-#  tags = merge(var.tags, {
-#    "user:Owner" = var.tags.Owner,
-#    "Name"       = "${var.tags.Name}-route-private-db-${element(var.availability_zones, var.single_nat_gateway ? 0 : count.index)}"
-#  })
-#}
+resource "aws_route_table" "private_db" {
+  count            = var.single_nat_gateway && var.tgw_route ? 1 : length(var.private_db_subnet_cidr)
+  vpc_id           = aws_vpc.main.id
+  propagating_vgws = var.propagate_private_route_tables_vgw
+
+  dynamic "route" {
+    for_each = var.existing_private_routes != null ? var.existing_private_routes : []
+    content {
+      cidr_block = route.value.cidr_block
+      gateway_id = route.value.gateway_id
+    }
+  }
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = element(aws_nat_gateway.ngw.*.id, count.index)
+  }
+
+  route {
+    cidr_block         = var.tgw_cidr
+    transit_gateway_id = var.tgw_id
+  }
+
+  dynamic "route" {
+    for_each = var.create_route_private ? var.external_route_private : []
+    content {
+      cidr_block = lookup(route.value, "cidr_block", "null")
+      gateway_id = lookup(route.value, "gateway_id", "null")
+    }
+  }
+
+  depends_on = [aws_nat_gateway.ngw]
+
+  tags = merge(var.tags, {
+    "Name" = "route-private-db-${element(var.availability_zones, var.single_nat_gateway ? 0 : count.index)}"
+  })
+}
 
 ###########################
 # ROUTE TABLE ASSOCIATIONS
@@ -236,23 +235,23 @@ resource "aws_route_table_association" "private_app" {
   )
 }
 
-#resource "aws_route_table_association" "private_db" {
-#  count     = length(var.private_db_subnet_cidr) > 0 ? length(var.private_db_subnet_cidr) : 0
-#  subnet_id = element(aws_subnet.private_db.*.id, count.index)
-#  route_table_id = element(
-#    aws_route_table.private_db.*.id,
-#    var.single_nat_gateway ? 0 : count.index,
-#  )
-#}
+resource "aws_route_table_association" "private_db" {
+  count     = length(var.private_db_subnet_cidr) > 0 ? length(var.private_db_subnet_cidr) : 0
+  subnet_id = element(aws_subnet.private_db.*.id, count.index)
+  route_table_id = element(
+    aws_route_table.private_db.*.id,
+    var.single_nat_gateway ? 0 : count.index,
+  )
+}
 
 ################################################################################
 # Default Network ACLs
 ################################################################################
 resource "aws_default_network_acl" "this" {
   count = var.manage_default_network_acl ? 1 : 0
-  
+
   default_network_acl_id = aws_vpc.main.default_network_acl_id
-  
+
   # The value of subnet_ids should be any subnet IDs that are not set as subnet_ids
   # for any of the non-default network ACLs
   subnet_ids = setsubtract(
@@ -267,7 +266,7 @@ resource "aws_default_network_acl" "this" {
       # aws_network_acl.private.*.subnet_ids,
     ]))
   )
-  
+
   dynamic "ingress" {
     for_each = var.default_network_acl_ingress
     content {
@@ -282,7 +281,7 @@ resource "aws_default_network_acl" "this" {
       to_port         = ingress.value.to_port
     }
   }
-  
+
   dynamic "egress" {
     for_each = var.default_network_acl_egress
     content {
@@ -297,9 +296,8 @@ resource "aws_default_network_acl" "this" {
       to_port         = egress.value.to_port
     }
   }
-  
+
   tags = merge(var.tags, {
-    "user:Owner" = var.tags.Owner,
-    "Name"       = "${var.tags.Name}-vpc-nacl"
+    "Name" = "vpc-nacl"
   })
 }

@@ -1,4 +1,3 @@
-#variable "cidr_block" {}
 variable "region" {}
 
 variable "availability_zones" {
@@ -30,6 +29,45 @@ variable "cidr_block" {
   type        = string
   description = "List of CIDR ranges . Defaults to 0.0.0.0/0"
   default     = "0.0.0.0/0"
+}
+
+variable "vpc_peering_connection_id" {
+  description = "The ID of the VPC Peering Connection."
+  type        = string
+  default     = ""
+}
+
+variable "peer_vpc_cidr_block" {
+  description = "The CIDR block of the remote peer VPC."
+  type        = string
+  default     = ""
+}
+
+variable "existing_public_routes" {
+  description = "List of existing routes to preserve in public route tables"
+  type = list(object({
+    cidr_block = string
+    gateway_id = string
+  }))
+  default = null
+}
+
+variable "existing_private_routes" {
+  description = "List of existing routes to preserve in private route tables"
+  type = list(object({
+    cidr_block = string
+    gateway_id = string
+  }))
+  default = null
+}
+
+variable "vpc_peering_routes" {
+  description = "List of VPC peering routes"
+  type = list(object({
+    cidr_block                = string
+    vpc_peering_connection_id = string
+  }))
+  default = []
 }
 
 variable "tags" {
@@ -119,13 +157,6 @@ variable "manage_default_network_acl" {
   type        = bool
   default     = false
 }
-
-variable "default_network_acl_name" {
-  description = "Name to be used on the Default Network ACL"
-  type        = string
-  default     = ""
-}
-
 
 variable "default_network_acl_ingress" {
   description = "List of maps of ingress rules to set on the Default Network ACL"
