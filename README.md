@@ -10,17 +10,6 @@ A production-grade Terraform module to deploy **multi-tier VPC architectures** o
 - **Security Controls**: Managed default NACLs with customizable rules
 - **Tagging Framework**: Consistent tagging for cost tracking and governance
 
-## Architecture
-
-![AWS VPC Architecture](https://raw.githubusercontent.com/vishal-cpu/terraform-aws-vpc/main/docs/vpc-architecture-diagram.png)
-
-**Key Components:**
-1. **Public Subnets** (IGW attached) - For load balancers/bastions
-2. **Private App Subnets** (NAT Gateway) - Application workloads
-3. **Private DB Subnets** (No Internet) - Databases/caches
-4. **Multi-AZ Deployment** - High availability
-5. **Centralized NAT** - Cost optimization
-
 ```hcl
 module "vpc" {
   source = "github.com/vishal-cpu/terraform-aws-vpc"
