@@ -111,8 +111,5 @@ module "vpc" {
 - Terraform ≥1.3.0
 - AWS Provider ≥4.0
 
-## Contributing  
-PRs welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
-
 ## License  
 MIT License. Copyright (c) [Vishal Saini](https://github.com/vishal-cpu).
