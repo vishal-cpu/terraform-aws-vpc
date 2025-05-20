@@ -10,6 +10,8 @@ A production-grade Terraform module to deploy **multi-tier VPC architectures** o
 - **Security Controls**: Managed default NACLs with customizable rules
 - **Tagging Framework**: Consistent tagging for cost tracking and governance
 
+## Usage
+
 ```hcl
 module "vpc" {
   source = "github.com/vishal-cpu/terraform-aws-vpc"
